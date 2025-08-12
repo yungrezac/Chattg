@@ -1,28 +1,27 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Telegram Chat Hub</title>
+    <title>Telegram Chat Connect</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
     <div class="app-container">
-        <!-- Чат-лист -->
+        <!-- Main Pages -->
         <div id="chats-page" class="page active">
             <div class="header">
-                <h1>Чаты</h1>
+                <h1>Мои чаты</h1>
             </div>
             <div id="chats-list" class="chats-list">
-                <!-- Чаты будут загружаться здесь -->
+                <!-- Chats will be loaded here -->
             </div>
         </div>
 
-        <!-- Профиль -->
         <div id="profile-page" class="page">
             <div class="header">
-                <h1>Профиль</h1>
+                <h1>Мой профиль</h1>
             </div>
             <div class="profile-content">
                 <div class="user-info">
@@ -31,44 +30,46 @@
                     <p id="user-username"></p>
                 </div>
                 <div class="profile-actions">
-                    <button id="share-chat-btn" class="tg-button">Поделиться чатом</button>
-                    <button id="join-chat-btn" class="tg-button">Подключиться к чату</button>
+                    <button id="share-chat-btn" class="tg-button primary">
+                        <span class="icon">📨</span> Поделиться чатом
+                    </button>
+                    <button id="join-chat-btn" class="tg-button secondary">
+                        <span class="icon">🔗</span> Подключиться к чату
+                    </button>
                 </div>
             </div>
         </div>
 
-        <!-- QR для обмена чатом -->
+        <!-- QR Code Modal -->
         <div id="qr-modal" class="modal">
             <div class="modal-content">
-                <span class="close-btn">&times;</span>
-                <h2>Ваш QR-код для чата</h2>
+                <div class="modal-header">
+                    <h3>Ваш QR-код для подключения</h3>
+                    <button class="close-btn">&times;</button>
+                </div>
                 <div id="qr-code-container"></div>
-                <p>Покажите этот код другому пользователю для подключения</p>
+                <div class="modal-footer">
+                    <button id="copy-invite-link" class="tg-button small">
+                        Копировать ссылку
+                    </button>
+                </div>
             </div>
         </div>
 
-        <!-- Сканер QR -->
-        <div id="scanner-modal" class="modal">
-            <div class="modal-content">
-                <span class="close-btn">&times;</span>
-                <h2>Сканирование QR-кода</h2>
-                <div id="scanner-container"></div>
-                <p>Наведите камеру на QR-код для подключения к чату</p>
-            </div>
-        </div>
-
-        <!-- Нижний навбар -->
+        <!-- Bottom Navigation -->
         <div class="bottom-navbar">
             <button id="chats-nav" class="nav-btn active">
+                <span class="icon">💬</span>
                 <span>Чаты</span>
             </button>
             <button id="profile-nav" class="nav-btn">
+                <span class="icon">👤</span>
                 <span>Профиль</span>
             </button>
         </div>
     </div>
 
-    <script src="script.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
