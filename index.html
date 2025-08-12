@@ -3,54 +3,139 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Telegram Chat Connect</title>
+    <title>Telegram Chat Connect Pro</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
 </head>
 <body>
     <div class="app-container">
-        <!-- Main Pages -->
+        <!-- Main Chat List -->
         <div id="chats-page" class="page active">
             <div class="header">
-                <h1>Мои чаты</h1>
+                <div class="header-content">
+                    <h1>Мои чаты</h1>
+                    <button id="new-chat-btn" class="icon-btn">➕</button>
+                </div>
+                <div class="search-container">
+                    <input type="text" id="chat-search" placeholder="Поиск чатов...">
+                    <span class="search-icon">🔍</span>
+                </div>
             </div>
             <div id="chats-list" class="chats-list">
                 <!-- Chats will be loaded here -->
+                <div class="skeleton-chat">
+                    <div class="skeleton-avatar"></div>
+                    <div class="skeleton-info">
+                        <div class="skeleton-line" style="width: 70%"></div>
+                        <div class="skeleton-line" style="width: 90%"></div>
+                    </div>
+                </div>
+                <!-- Repeat skeleton 3 times -->
             </div>
         </div>
 
+        <!-- Profile Page -->
         <div id="profile-page" class="page">
             <div class="header">
                 <h1>Мой профиль</h1>
             </div>
             <div class="profile-content">
-                <div class="user-info">
-                    <img id="user-avatar" src="" alt="User Avatar">
-                    <h2 id="user-name"></h2>
-                    <p id="user-username"></p>
+                <div class="user-card animate__animated animate__fadeIn">
+                    <div class="user-avatar-container">
+                        <img id="user-avatar" src="" alt="User Avatar" class="user-avatar">
+                        <div class="online-status"></div>
+                    </div>
+                    <div class="user-info">
+                        <h2 id="user-name"></h2>
+                        <p id="user-username" class="username"></p>
+                        <p id="user-id" class="user-id"></p>
+                    </div>
                 </div>
-                <div class="profile-actions">
-                    <button id="share-chat-btn" class="tg-button primary">
-                        <span class="icon">📨</span> Поделиться чатом
-                    </button>
-                    <button id="join-chat-btn" class="tg-button secondary">
-                        <span class="icon">🔗</span> Подключиться к чату
-                    </button>
+
+                <div class="profile-section">
+                    <h3 class="section-title">Действия</h3>
+                    <div class="action-buttons">
+                        <button id="share-chat-btn" class="action-btn">
+                            <span class="action-icon">📨</span>
+                            <span>Поделиться чатом</span>
+                            <span class="action-arrow">›</span>
+                        </button>
+                        <button id="join-chat-btn" class="action-btn">
+                            <span class="action-icon">🔗</span>
+                            <span>Подключиться к чату</span>
+                            <span class="action-arrow">›</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="profile-section">
+                    <h3 class="section-title">Настройки</h3>
+                    <div class="settings-list">
+                        <div class="setting-item">
+                            <span class="setting-icon">🌙</span>
+                            <span>Темная тема</span>
+                            <label class="switch">
+                                <input type="checkbox" id="dark-mode-toggle">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                        <div class="setting-item">
+                            <span class="setting-icon">🔔</span>
+                            <span>Уведомления</span>
+                            <label class="switch">
+                                <input type="checkbox" id="notifications-toggle" checked>
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- QR Code Modal -->
         <div id="qr-modal" class="modal">
-            <div class="modal-content">
+            <div class="modal-content animate__animated animate__fadeInUp">
                 <div class="modal-header">
-                    <h3>Ваш QR-код для подключения</h3>
+                    <h3>Приглашение в чат</h3>
                     <button class="close-btn">&times;</button>
                 </div>
-                <div id="qr-code-container"></div>
+                <div class="modal-body">
+                    <div id="qr-code-container"></div>
+                    <p class="qr-instruction">Отсканируйте QR-код для подключения к чату</p>
+                    <div class="invite-link-container">
+                        <input type="text" id="invite-link" readonly>
+                        <button id="copy-invite-link" class="copy-btn">Копировать</button>
+                    </div>
+                </div>
                 <div class="modal-footer">
-                    <button id="copy-invite-link" class="tg-button small">
-                        Копировать ссылку
+                    <button id="share-invite-btn" class="tg-button primary">
+                        Поделиться ссылкой
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- New Chat Modal -->
+        <div id="new-chat-modal" class="modal">
+            <div class="modal-content animate__animated animate__fadeInUp">
+                <div class="modal-header">
+                    <h3>Новый чат</h3>
+                    <button class="close-btn">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="input-group">
+                        <label for="chat-title">Название чата</label>
+                        <input type="text" id="chat-title" placeholder="Введите название">
+                    </div>
+                    <div class="input-group">
+                        <label for="chat-members">Участники</label>
+                        <input type="text" id="chat-members" placeholder="Добавить участников">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="create-chat-btn" class="tg-button primary">
+                        Создать чат
                     </button>
                 </div>
             </div>
@@ -59,14 +144,17 @@
         <!-- Bottom Navigation -->
         <div class="bottom-navbar">
             <button id="chats-nav" class="nav-btn active">
-                <span class="icon">💬</span>
-                <span>Чаты</span>
+                <span class="nav-icon">💬</span>
+                <span class="nav-label">Чаты</span>
             </button>
             <button id="profile-nav" class="nav-btn">
-                <span class="icon">👤</span>
-                <span>Профиль</span>
+                <span class="nav-icon">👤</span>
+                <span class="nav-label">Профиль</span>
             </button>
         </div>
+
+        <!-- Toast Notification -->
+        <div id="toast" class="toast"></div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
