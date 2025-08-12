@@ -1,190 +1,276 @@
-// Инициализация Telegram WebApp
-const tg = window.Telegram.WebApp;
-
-// Основные элементы DOM
-const chatsPage = document.getElementById('chats-page');
-const profilePage = document.getElementById('profile-page');
-const chatsNav = document.getElementById('chats-nav');
-const profileNav = document.getElementById('profile-nav');
-const chatsList = document.getElementById('chats-list');
-const userAvatar = document.getElementById('user-avatar');
-const userName = document.getElementById('user-name');
-const userUsername = document.getElementById('user-username');
-const shareChatBtn = document.getElementById('share-chat-btn');
-const joinChatBtn = document.getElementById('join-chat-btn');
-const qrModal = document.getElementById('qr-modal');
-const scannerModal = document.getElementById('scanner-modal');
-const qrCodeContainer = document.getElementById('qr-code-container');
-const scannerContainer = document.getElementById('scanner-container');
-
-// Инициализация приложения
-function initApp() {
-    // Настройка WebApp
-    tg.expand();
-    tg.enableClosingConfirmation();
-    tg.BackButton.hide();
-    
-    // Загрузка данных пользователя
-    loadUserData();
-    
-    // Загрузка чатов
-    loadChats();
-    
-    // Настройка навигации
-    setupNavigation();
-    
-    // Настройка кнопок профиля
-    setupProfileButtons();
-}
-
-// Загрузка данных пользователя
-function loadUserData() {
-    const user = tg.initDataUnsafe.user;
-    if (user) {
-        userName.textContent = `${user.first_name} ${user.last_name || ''}`.trim();
-        userUsername.textContent = `@${user.username}`;
+class TelegramChatApp {
+    constructor() {
+        this.tg = window.Telegram.WebApp;
+        this.initData = this.tg.initData || '';
+        this.initDataUnsafe = this.tg.initDataUnsafe || {};
+        this.user = this.initDataUnsafe.user || {};
+        this.chats = [];
+        this.currentChatId = null;
         
-        if (user.photo_url) {
-            userAvatar.src = user.photo_url;
-        } else {
-            userAvatar.src = 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
+        this.initElements();
+        this.setupEventListeners();
+        this.initApp();
+    }
+    
+    initElements() {
+        // Pages
+        this.chatsPage = document.getElementById('chats-page');
+        this.profilePage = document.getElementById('profile-page');
+        
+        // Navigation
+        this.chatsNav = document.getElementById('chats-nav');
+        this.profileNav = document.getElementById('profile-nav');
+        
+        // Chat list
+        this.chatsList = document.getElementById('chats-list');
+        
+        // User profile
+        this.userAvatar = document.getElementById('user-avatar');
+        this.userName = document.getElementById('user-name');
+        this.userUsername = document.getElementById('user-username');
+        
+        // Buttons
+        this.shareChatBtn = document.getElementById('share-chat-btn');
+        this.joinChatBtn = document.getElementById('join-chat-btn');
+        this.copyInviteLinkBtn = document.getElementById('copy-invite-link');
+        
+        // Modals
+        this.qrModal = document.getElementById('qr-modal');
+        this.qrCodeContainer = document.getElementById('qr-code-container');
+        
+        // Close buttons
+        this.closeButtons = document.querySelectorAll('.close-btn');
+    }
+    
+    setupEventListeners() {
+        // Navigation
+        this.chatsNav.addEventListener('click', () => this.showPage('chats'));
+        this.profileNav.addEventListener('click', () => this.showPage('profile'));
+        
+        // Buttons
+        this.shareChatBtn.addEventListener('click', () => this.showQRCode());
+        this.joinChatBtn.addEventListener('click', () => this.openQRScanner());
+        this.copyInviteLinkBtn.addEventListener('click', () => this.copyInviteLink());
+        
+        // Close modals
+        this.closeButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                this.closeModals();
+            });
+        });
+        
+        // Handle back button
+        this.tg.onEvent('backButtonClicked', () => {
+            if (this.qrModal.style.display === 'flex') {
+                this.closeModals();
+            } else {
+                this.tg.close();
+            }
+        });
+    }
+    
+    initApp() {
+        // Configure WebApp
+        this.tg.expand();
+        this.tg.enableClosingConfirmation();
+        this.tg.BackButton.hide();
+        this.tg.MainButton.hide();
+        
+        // Set viewport height for mobile browsers
+        document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`);
+        window.addEventListener('resize', () => {
+            document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`);
+        });
+        
+        // Load user data
+        this.loadUserData();
+        
+        // Load chats
+        this.loadChats();
+        
+        // Set theme change handler
+        this.tg.onEvent('themeChanged', this.updateTheme);
+        this.updateTheme();
+    }
+    
+    updateTheme() {
+        document.body.className = this.tg.colorScheme;
+    }
+    
+    loadUserData() {
+        if (this.user) {
+            this.userName.textContent = [this.user.first_name, this.user.last_name].filter(Boolean).join(' ');
+            
+            if (this.user.username) {
+                this.userUsername.textContent = `@${this.user.username}`;
+            } else {
+                this.userUsername.style.display = 'none';
+            }
+            
+            if (this.user.photo_url) {
+                this.userAvatar.src = this.user.photo_url;
+            } else {
+                this.userAvatar.src = this.getDefaultAvatar();
+            }
         }
     }
-}
-
-// Загрузка чатов (заглушка)
-function loadChats() {
-    // В реальном приложении здесь будет запрос к вашему бэкенду
-    const mockChats = [
-        { id: 1, title: "Общий чат", lastMessage: "Привет! Как дела?", unread: 2 },
-        { id: 2, title: "Рабочая группа", lastMessage: "Завтра встреча в 10:00", unread: 0 },
-        { id: 3, title: "Друзья", lastMessage: "Кто сегодня свободен?", unread: 5 }
-    ];
     
-    chatsList.innerHTML = '';
+    getDefaultAvatar() {
+        return this.tg.colorScheme === 'dark' ? 
+            'https://cdn-icons-png.flaticon.com/512/149/149071.png?dark=1' : 
+            'https://cdn-icons-png.flaticon.com/512/149/149071.png';
+    }
     
-    mockChats.forEach(chat => {
-        const chatElement = document.createElement('div');
-        chatElement.className = 'chat-item';
-        chatElement.innerHTML = `
-            <h3>${chat.title}</h3>
-            <p>${chat.lastMessage}</p>
-            ${chat.unread > 0 ? `<span class="unread-badge">${chat.unread}</span>` : ''}
-        `;
-        chatElement.addEventListener('click', () => openChat(chat.id));
-        chatsList.appendChild(chatElement);
-    });
-}
-
-// Открытие чата
-function openChat(chatId) {
-    // В реальном приложении здесь будет открытие чата
-    tg.showAlert(`Открыт чат с ID: ${chatId}`);
-}
-
-// Настройка навигации
-function setupNavigation() {
-    chatsNav.addEventListener('click', () => {
-        chatsPage.classList.add('active');
-        profilePage.classList.remove('active');
-        chatsNav.classList.add('active');
-        profileNav.classList.remove('active');
-    });
+    loadChats() {
+        // In a real app, you would fetch this from your backend
+        this.chats = [
+            { id: 1, title: "Общий чат", lastMessage: "Привет! Как дела?", unread: 2, avatar: '' },
+            { id: 2, title: "Рабочая группа", lastMessage: "Завтра встреча в 10:00", unread: 0, avatar: '' },
+            { id: 3, title: "Друзья", lastMessage: "Кто сегодня свободен?", unread: 5, avatar: '' }
+        ];
+        
+        this.renderChats();
+    }
     
-    profileNav.addEventListener('click', () => {
-        profilePage.classList.add('active');
-        chatsPage.classList.remove('active');
-        profileNav.classList.add('active');
-        chatsNav.classList.remove('active');
-    });
-}
-
-// Настройка кнопок профиля
-function setupProfileButtons() {
-    // Кнопка "Поделиться чатом"
-    shareChatBtn.addEventListener('click', () => {
-        generateQRCode();
-        qrModal.style.display = 'flex';
-    });
-    
-    // Кнопка "Подключиться к чату"
-    joinChatBtn.addEventListener('click', () => {
-        openQRScanner();
-        scannerModal.style.display = 'flex';
-    });
-    
-    // Закрытие модальных окон
-    document.querySelectorAll('.close-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            qrModal.style.display = 'none';
-            scannerModal.style.display = 'none';
-            stopQRScanner();
+    renderChats() {
+        this.chatsList.innerHTML = '';
+        
+        this.chats.forEach(chat => {
+            const chatElement = document.createElement('div');
+            chatElement.className = 'chat-item';
+            chatElement.innerHTML = `
+                <div class="chat-avatar">
+                    ${chat.avatar ? `<img src="${chat.avatar}" alt="${chat.title}">` : '👥'}
+                </div>
+                <div class="chat-info">
+                    <div class="chat-title">${chat.title}</div>
+                    <div class="chat-preview">${chat.lastMessage}</div>
+                </div>
+                ${chat.unread > 0 ? `<div class="unread-badge">${chat.unread}</div>` : ''}
+            `;
+            
+            chatElement.addEventListener('click', () => this.openChat(chat.id));
+            this.chatsList.appendChild(chatElement);
         });
-    });
-}
-
-// Генерация QR-кода
-function generateQRCode() {
-    const user = tg.initDataUnsafe.user;
-    if (!user) return;
+    }
     
-    // В реальном приложении здесь будет уникальная ссылка для подключения к вашему чату
-    const chatInviteLink = `https://t.me/${user.username}?start=chat_${user.id}`;
+    showPage(page) {
+        if (page === 'chats') {
+            this.chatsPage.classList.add('active');
+            this.profilePage.classList.remove('active');
+            this.chatsNav.classList.add('active');
+            this.profileNav.classList.remove('active');
+        } else {
+            this.profilePage.classList.add('active');
+            this.chatsPage.classList.remove('active');
+            this.profileNav.classList.add('active');
+            this.chatsNav.classList.remove('active');
+        }
+    }
     
-    qrCodeContainer.innerHTML = '';
-    QRCode.toCanvas(qrCodeContainer, chatInviteLink, { width: 200 }, (error) => {
-        if (error) console.error('QR generation error:', error);
-    });
-}
-
-// Открытие сканера QR
-function openQRScanner() {
-    scannerContainer.innerHTML = '<p>Инициализация сканера...</p>';
+    openChat(chatId) {
+        this.currentChatId = chatId;
+        this.tg.showPopup({
+            title: 'Открытие чата',
+            message: `Вы будете перенаправлены в чат ${chatId}`,
+            buttons: [
+                { id: 'open', type: 'default', text: 'Открыть' },
+                { type: 'cancel' }
+            ]
+        }, (buttonId) => {
+            if (buttonId === 'open') {
+                // In a real app, you would open the chat
+                this.tg.showAlert(`Чат ${chatId} открыт`);
+            }
+        });
+    }
     
-    // В реальном приложении здесь будет использование Telegram WebApp API для сканирования QR
-    // Это примерная реализация, так как прямой доступ к камере требует разрешений
-    
-    setTimeout(() => {
-        // Эмуляция сканирования QR для демонстрации
-        scannerContainer.innerHTML = `
-            <video id="scanner-video" autoplay playsinline></video>
-            <canvas id="scanner-canvas" style="display:none;"></canvas>
-        `;
+    showQRCode() {
+        if (!this.user.id) {
+            this.tg.showAlert('Не удалось загрузить данные пользователя');
+            return;
+        }
         
-        // В реальном приложении здесь будет код для работы с камерой
-        // Например, с использованием библиотеки Instascan или аналогичной
+        // Generate unique invite link
+        const inviteLink = `https://t.me/${this.tg.initDataUnsafe.user.username || 'user'}_${this.user.id}`;
+        this.currentInviteLink = inviteLink;
         
-        // Эмуляция сканирования через 3 секунды
-        setTimeout(() => {
-            handleScannedQR('https://t.me/demo_user?start=chat_12345');
-        }, 3000);
-    }, 1000);
-}
-
-// Обработка отсканированного QR
-function handleScannedQR(data) {
-    stopQRScanner();
-    scannerModal.style.display = 'none';
+        // Generate QR code
+        this.qrCodeContainer.innerHTML = '';
+        QRCode.toCanvas(this.qrCodeContainer, inviteLink, { 
+            width: 200,
+            color: {
+                dark: this.tg.colorScheme === 'dark' ? '#ffffff' : '#000000',
+                light: 'transparent'
+            }
+        }, (error) => {
+            if (error) {
+                console.error('QR code error:', error);
+                this.tg.showAlert('Ошибка генерации QR-кода');
+                return;
+            }
+            
+            // Adjust QR code styling
+            const canvas = this.qrCodeContainer.querySelector('canvas');
+            if (canvas) {
+                canvas.style.backgroundColor = this.tg.colorScheme === 'dark' ? '#18222d' : '#ffffff';
+                canvas.style.padding = '12px';
+                canvas.style.borderRadius = '8px';
+            }
+        });
+        
+        // Show modal
+        this.qrModal.style.display = 'flex';
+        this.tg.BackButton.show();
+    }
     
-    // Извлечение ID чата из данных QR
-    const chatIdMatch = data.match(/chat_(\d+)/);
-    if (chatIdMatch && chatIdMatch[1]) {
-        const chatId = chatIdMatch[1];
-        tg.showAlert(`Подключение к чату ID: ${chatId}`);
-        // В реальном приложении здесь будет переход в чат
-    } else {
-        tg.showAlert('Неверный QR-код чата');
+    openQRScanner() {
+        this.tg.showScanQrPopup({
+            text: 'Наведите камеру на QR-код для подключения к чату'
+        }, (text) => {
+            if (text) {
+                this.handleScannedQR(text);
+            } else {
+                this.tg.showAlert('Сканирование отменено');
+            }
+        });
+    }
+    
+    handleScannedQR(text) {
+        // Parse chat ID from QR code
+        const chatIdMatch = text.match(/_(\d+)$/);
+        if (chatIdMatch && chatIdMatch[1]) {
+            const chatId = chatIdMatch[1];
+            this.tg.showAlert(`Подключение к чату пользователя с ID: ${chatId}`, () => {
+                // In a real app, you would connect to the chat
+                this.loadChats();
+            });
+        } else {
+            this.tg.showAlert('Неверный QR-код. Пожалуйста, сканируйте только коды этого приложения.');
+        }
+    }
+    
+    copyInviteLink() {
+        if (!this.currentInviteLink) return;
+        
+        navigator.clipboard.writeText(this.currentInviteLink).then(() => {
+            this.tg.showAlert('Ссылка скопирована в буфер обмена');
+        }).catch(err => {
+            console.error('Copy failed:', err);
+            this.tg.showAlert('Не удалось скопировать ссылку');
+        });
+    }
+    
+    closeModals() {
+        this.qrModal.style.display = 'none';
+        this.tg.BackButton.hide();
     }
 }
 
-// Остановка сканера QR
-function stopQRScanner() {
-    const video = document.getElementById('scanner-video');
-    if (video && video.srcObject) {
-        video.srcObject.getTracks().forEach(track => track.stop());
-    }
-    scannerContainer.innerHTML = '<p>Сканер остановлен</p>';
-}
-
-// Инициализация приложения при загрузке
-document.addEventListener('DOMContentLoaded', initApp);
+// Initialize the app when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    const app = new TelegramChatApp();
+    
+    // Expose app to window for debugging
+    window.app = app;
+});
